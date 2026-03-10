@@ -54,7 +54,9 @@ export function startCredentialProxy(
       req.on('data', (c) => chunks.push(c));
       req.on('end', () => {
         const body = Buffer.concat(chunks);
-        const incomingApiKey = (req.headers as Record<string, string>)['x-api-key'];
+        const incomingApiKey = (req.headers as Record<string, string>)[
+          'x-api-key'
+        ];
         const headers: Record<string, string | number | string[] | undefined> =
           {
             ...(req.headers as Record<string, string>),

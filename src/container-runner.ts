@@ -146,10 +146,7 @@ function buildVolumeMounts(
     if (envVars.ANTHROPIC_MODEL) {
       settings.model = envVars.ANTHROPIC_MODEL;
     }
-    fs.writeFileSync(
-      settingsFile,
-      JSON.stringify(settings, null, 2) + '\n',
-    );
+    fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
   }
 
   // Sync skills from container/skills/ into each group's .claude/skills/
