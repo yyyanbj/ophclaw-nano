@@ -427,6 +427,8 @@ async function runQuery(
       hooks: {
         PreCompact: [{ hooks: [createPreCompactHook(containerInput.assistantName)] }],
       },
+      // Explicitly set model to bypass settings file
+      model: sdkEnv.CLAUDE_CODE_MODEL || sdkEnv.ANTHROPIC_MODEL,
     }
   })) {
     messageCount++;
@@ -484,6 +486,13 @@ async function main(): Promise<void> {
   // Credentials are injected by the host's credential proxy via ANTHROPIC_BASE_URL.
   // No real secrets exist in the container environment.
   const sdkEnv: Record<string, string | undefined> = { ...process.env };
+
+  // Pass the model explicitly to SDK (some custom models need this)
+  // Claude Code SDK reads CLAUDE_CODE_MODEL for model selection
+  if (process.env.ANTHROPIC_MODEL) {
+    sdkEnv.CLAUDE_CODE_MODEL = process.env.ANTHROPIC_MODEL;
+    sdkEnv.CLAUDE_CODE_DEFAULT_MODEL = process.env.ANTHROPIC_MODEL;
+  }
 
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const mcpServerPath = path.join(__dirname, 'ipc-mcp-stdio.js');

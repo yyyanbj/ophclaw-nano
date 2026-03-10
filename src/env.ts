@@ -7,8 +7,10 @@ import { logger } from './logger.js';
  * Does NOT load anything into process.env — callers decide what to
  * do with the values. This keeps secrets out of the process environment
  * so they don't leak to child processes.
+ *
+ * If keys is undefined or empty array, returns ALL variables from the .env file.
  */
-export function readEnvFile(keys: string[]): Record<string, string> {
+export function readEnvFile(keys?: string[]): Record<string, string> {
   const envFile = path.join(process.cwd(), '.env');
   let content: string;
   try {
@@ -19,7 +21,7 @@ export function readEnvFile(keys: string[]): Record<string, string> {
   }
 
   const result: Record<string, string> = {};
-  const wanted = new Set(keys);
+  const wanted = keys && keys.length > 0 ? new Set(keys) : null;
 
   for (const line of content.split('\n')) {
     const trimmed = line.trim();
@@ -27,7 +29,8 @@ export function readEnvFile(keys: string[]): Record<string, string> {
     const eqIdx = trimmed.indexOf('=');
     if (eqIdx === -1) continue;
     const key = trimmed.slice(0, eqIdx).trim();
-    if (!wanted.has(key)) continue;
+    // If no keys specified, load all; otherwise filter by requested keys
+    if (wanted && !wanted.has(key)) continue;
     let value = trimmed.slice(eqIdx + 1).trim();
     if (
       (value.startsWith('"') && value.endsWith('"')) ||

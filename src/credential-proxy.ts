@@ -43,6 +43,10 @@ export function startCredentialProxy(
   );
   const isHttps = upstreamUrl.protocol === 'https:';
   const makeRequest = isHttps ? httpsRequest : httpRequest;
+  // Preserve the base URL's path (e.g., '/apps/anthropic') and append the request path
+  const basePath = upstreamUrl.pathname.endsWith('/')
+    ? upstreamUrl.pathname.slice(0, -1)
+    : upstreamUrl.pathname;
 
   return new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
@@ -50,6 +54,7 @@ export function startCredentialProxy(
       req.on('data', (c) => chunks.push(c));
       req.on('end', () => {
         const body = Buffer.concat(chunks);
+        const incomingApiKey = (req.headers as Record<string, string>)['x-api-key'];
         const headers: Record<string, string | number | string[] | undefined> =
           {
             ...(req.headers as Record<string, string>),
@@ -79,11 +84,26 @@ export function startCredentialProxy(
           }
         }
 
+        // Prepend base path to request URL (e.g., '/apps/anthropic' + '/v1/messages')
+        const upstreamPath = basePath + req.url;
+
+        logger.debug(
+          {
+            method: req.method,
+            url: req.url,
+            upstreamPath,
+            incomingApiKey: incomingApiKey ? 'placeholder' : 'none',
+            outgoingApiKey: authMode === 'api-key' ? 'injected' : 'N/A',
+            authMode,
+          },
+          'Proxy forwarding request',
+        );
+
         const upstream = makeRequest(
           {
             hostname: upstreamUrl.hostname,
             port: upstreamUrl.port || (isHttps ? 443 : 80),
-            path: req.url,
+            path: upstreamPath,
             method: req.method,
             headers,
           } as RequestOptions,
